@@ -2,27 +2,32 @@ var mongodb = require('mongodb').MongoClient;
 var express = require('express');
 var app = express();
 
+// utility plugin
+require('console.table')
+
 const mongoUrl = "mongodb://localhost:27017/urlshortener";
 
 
-   function randomizeUrl(length){
-       var randomString = Math.random().toString(36).substr(0,length);
-       console.log(randomString);
-       return randomString;
-   }
+function randomizeUrl(length){
+   var randomString = Math.random().toString(36).substr(2,length);
+   return randomString;
+}
    
 
 app.get("/*", function(req,res){
     
-    
     var baseUrl = req.params['0'];
     var shortUrl = randomizeUrl(7);
     
-
-    //need to create a short url
-        //generate random characters- 7?
-        //verify db does not have 
+    var output={
+        "original_url": baseUrl,
+        "short_url": shortUrl,
+    }
     
+    console.log("baseurl", baseUrl);
+    console.log("shorturl", shortUrl);
+
+     
     
     //then store the short url as key with a value of baseurl
     mongodb.connect(mongoUrl, function(err,db){
@@ -30,38 +35,55 @@ app.get("/*", function(req,res){
             console.log(err)
         }else{
             console.log("Connected to the database at", mongoUrl)
+           
+            var urlCollection = db.collection("urls");
+               
+            //check if db has passed url 
             
-            var collection = db.collection("urls");
+            var redirectUrl = urlCollection.findOne({short_url:{
+                    $eq:baseUrl}}, {original_url: true}, function(err,item){
+                        if(err){
+                            console.log(err)
+                        }
+                        if(item){
+                            console.log("redirect found")
+                            console.log("item", item)
+                            console.log("console log inside", item.original_url)
+                            db.close();
+                            res.redirect(item.original_url)
+                            
+                        }
+                        //no record found add to db
+                            console.log("Add to db")
+                            urlCollection.insert(output)
+                            db.close();
+                            res.send(output);
+                    })
             
-            //if the short url exists then redirect the user
-            if(collection.count(baseUrl)){
-                //redirect the user
+            //returns a promise
+            // console.log("Console log outside", redirectUrl)
+
+            // if(redirectUrl === baseUrl){
+            //     console.log("Redirect")
+            //     ;
+
+            //     //redirect the user
                 
-            }else{
-                //else store the url in shorturl key value pair
-                collection.insert({
-                shortUrl: baseUrl
-                })
-            
-            }
-    
+                
+            // }else{
+            //     console.log("add to collection")
+            //     //else store the url in shorturl key value pair
+            //     urlCollection.insert(output)
+                
+            //     db.close();
+            //     res.send(output);
+            // }
+
         }
-        db.close();
+        
     })
-        
-        
+ 
     
-    
-    
-    
-    //now send the response
-    
-    var output={
-        "original_url": baseUrl,
-        "short_url": shortUrl,
-    }
-    
-    res.send(output);
     
 });
 
