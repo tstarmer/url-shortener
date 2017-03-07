@@ -6,7 +6,7 @@ var notValidUrlMessage= {"error":"Wrong url format, make sure you have a valid p
 var extRegEx = /\.(?=[a-z]{2})/;
 var protRegEx =/http:\/\/|https:\/\//;
 
-const mongoUrl = "mongodb://localhost:27017/urlshortener";
+const mongoUrl = process.env.MONGOLAB_URI;
 
 function randomizeUrl(length){
    var randomString = Math.random().toString(36).substr(2,length);
